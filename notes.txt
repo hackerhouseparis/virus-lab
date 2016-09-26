@@ -1,0 +1,264 @@
+/*
+    Port scanner code in c
+*/
+#include<stdio.h>
+#include<sys/socket.h>
+#include<errno.h>
+#include<netdb.h>
+#include<string.h>
+#include<stdlib.h>
+ 
+int main(int argc , char **argv)
+{
+    struct hostent *host;https://mensuel.framapad.org/p/vir00009
+    int err, i , sock ,start , end;
+    char hostname[100];
+    struct sockaddr_in sa;
+     
+    //Get the hostname to scan
+    printf("Enter hostname or IP : ");
+    gets(hostname);
+     
+    //Get start port number
+    printf("\nEnter start port number : ");
+    scanf("%d" , &start);
+     
+    //Get end port number
+    printf("Enter end port number : ");
+    scanf("%d" , &end);
+ 
+    //Initialise the sockaddr_in structure
+    strncpy((char*)&sa , "" , sizeof sa);
+    sa.sin_family = AF_INET;
+     
+    //direct ip address, use it
+    if(isdigit(hostname[0]))
+    {
+        printf("Doing inet_addr...");
+        sa.sin_addr.s_addr = inet_addr(hostname);
+        printf("Done\n");
+    }
+    //Resolve hostname to ip address
+    else if( (host = gethostbyname(hostname)) != 0)
+    {
+        printf("Doing gethostbyname...");
+        strncpy((char*)&sa.sin_addr , (char*)host->h_addr , sizeof sa.sin_addr);
+        printf("Done\n");
+    }
+    else
+    {
+        herror(hostname);
+        exit(2);
+    }
+     
+    //Start the port scan loop
+    printf("Starting the portscan loop : \n");
+    for( i = start ; i <= end ; i++) 
+    {
+        //Fill in the port number
+        sa.sin_port = htons(i);
+        //Create a socket of type TCP
+        sock = socket(AF_INET , SOCK_STREAM , 0);
+         
+        //Check whether socket created fine or not
+        if(sock < 0) 
+        {
+            perror("\nSocket");
+            exit(1);
+        }
+        //Connect using that socket and sockaddr structure
+        err = connect(sock , (struct sockaddr*)&sa , sizeof sa);
+         
+        //not connected
+        if( err < 0 )
+        {
+            //printf("%s %-5d %s\r" , hostname , i, strerror(errno));
+            fflush(stdout);
+        }
+        //connected
+        else
+        {
+            printf("%-5d open\n",  i);
+        }
+        close(sock);
+    }
+     
+    printf("\r");
+    fflush(stdout);
+    return(0);
+} 
+
+
+
+
+
+
+
+
+
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
+static const char alphabet[] ="abcdefghijklmnopqrstuvwxyz""ABCDEFGHIJKLMNOPQRSTUVWXYZ""0123456789";
+static const int alphabetSize = sizeof(alphabet) - 1;
+void bruteImpl(char* str, int index, int maxDepth){
+    for (int i = 0; i < alphabetSize; ++i)
+    {
+        str[index] = alphabet[i];
+
+        if (index == maxDepth - 1) printf("%s\n", str);
+        else bruteImpl(str, index + 1, maxDepth);
+    }}
+void bruteSequential(int maxLen){
+    char* buf = malloc(maxLen + 1);
+
+    for (int i = 1; i <= maxLen; ++i)
+    {
+        memset(buf, 0, maxLen + 1);
+        bruteImpl(buf, 0, i);
+    }
+
+    free(buf);}
+int main(void){
+    bruteSequential(3);
+    return 0;}
+
+
+
+
+/*
+ TCP Connect portscanner with winsock
+*/
+ 
+#include<stdio.h>    
+#include<winsock2.h>
+#pragma comment(lib, "ws2_32.lib"); //To link the winsock library  
+ 
+int main(int argc, char **argv)   
+{
+ WSADATA firstsock;   
+ SOCKET s;
+ struct hostent *host;
+ int err,i, startport , endport;
+ struct sockaddr_in sa; //this stores the destination address
+ char hostname[100];
+ 
+ strncpy((char *)&sa,"",sizeof sa);  
+ sa.sin_family = AF_INET; //this line must be like this coz internet
+ 
+ //Initialise winsock
+ if (WSAStartup(MAKEWORD(2,0),&firstsock) != 0)  //CHECKS FOR WINSOCK VERSION 2.0
+ {
+  fprintf(stderr,"WSAStartup() failed"); //print formatted data specify stream and options
+  exit(EXIT_FAILURE);        //or exit(1);
+ } 
+  
+ printf("Enter hostname or ip to scan : ");
+ gets(hostname);
+  
+ printf("Enter starting port : ");
+ scanf("%d" , &startport);
+  
+ printf("Enter ending port : ");
+ scanf("%d" , &endport);
+  
+ if(isdigit(hostname[0]))
+ {  
+  printf("Doing inet_addr...");
+  sa.sin_addr.s_addr = inet_addr(hostname); //get ip into s_addr
+  printf("Done\n");
+ }        
+ else if( (host=gethostbyname(hostname)) != 0)
+ {
+  printf("Doing gethostbyname()...");
+  strncpy((char *)&sa.sin_addr , (char *)host->h_addr_list[0] , sizeof sa.sin_addr);
+  printf("Done\n");
+ }
+ else
+ {
+    printf("Error resolving hostname");
+       exit(EXIT_FAILURE);
+ }
+ 
+  
+ //Start the portscan loop
+ printf("Starting the scan loop...\n");
+ for(i = startport ; i<= endport ; i++)
+ {
+   
+  s = socket(AF_INET , SOCK_STREAM , 0); //make net a valid socket handle
+  if(s < 0)  //if not a socket
+  {
+   perror("\nSocket creation failed");  // perror function prints an error message to stderr
+   exit(EXIT_FAILURE);       //or exit(0);
+  }
+   
+  sa.sin_port = htons(i);
+  //connect to the server with that socket
+  err = connect(s , (struct sockaddr *)&sa , sizeof sa);
+ 
+  if(err == SOCKET_ERROR) //connection not accepted
+  {
+   printf("%s %-5d Winsock Error Code : %d\n" , hostname , i , WSAGetLastError());
+   fflush(stdout);
+  }
+  else  //connection accepted
+  {
+   printf("%s %-5d accepted            \n" , hostname , i);
+   if( shutdown( s ,SD_BOTH ) == SOCKET_ERROR )
+   {
+    perror("\nshutdown");// perror function prints an error message to stderr
+    exit(EXIT_FAILURE);   
+   }
+  } 
+  closesocket(s);   //closes the net socket 
+ }
+  
+ fflush(stdout); //clears the contents of a buffer or flushes a stream
+ return(0);
+}
+
+sitographie :
+-https://www.tutorialspoint.com/c_standard_library/string_h.htmc
+-http://vxheaven.org/lib/static/vdat/mphguide.htm
+-http://c.developpez.com/cours/sockets-c-cpp-demystifies/
+-https://wapiti.telecom-lille.fr/commun/ens/peda/options/st/rio/pub/exposes/exposesrio1998ttv/WINSOCK2/page4.htm
+-https://openclassrooms.com/courses/les-parametres-de-la-fonction-main
+-http://malm.tuxfamily.org/doc/corruption_cache_arp.htm
+
+
+
+
+#!/bin/bash
+
+#Dependencies
+awk=$(which awk);
+pwd=$(which pwd);
+echo=$(which echo);
+
+#Initialize empty array for targets IP
+TARGETS=();
+
+#Record current location
+LOCATION=$($pwd);
+
+#Get the current ARP Table
+ARP=$( $echo $(arp -a) | awk 'NR > 1 { a[NR-2]=$1 } END {for(o in a) {print a[o]} }' RS='(' FS=')' );
+for i in ${ARP}; do TARGETS+=("$i"); done;
+
+#Target ports
+SSH=22;
+TELNET=23;
+
+#Get potential targets from the ARP Table
+for i in ${TARGETS[@]}; do 
+    nc -v -n -z -w 1 $i $SSH;
+done;
+
+#Map the available network
+#for i in $(seq 21 29); do nc -v -n -z -w 1 192.168.0.$i 443; done
+
+
+
+
+
